@@ -1,0 +1,16 @@
+{
+  "name": "com.oojjrs.ore",
+  "displayName": "OOJJRS' Reporter Client",
+  "version": "1.0.0",
+  "unity": "6000.0",
+  "description": "Unity client package for submitting reports and usage events to OOJJRS Reporter.",
+  "dependencies": {
+    "com.unity.modules.imageconversion": "1.0.0",
+    "com.unity.modules.jsonserialize": "1.0.0",
+    "com.unity.modules.unitywebrequest": "1.0.0"
+  },
+  "author": {
+    "name": "oojjrs",
+    "email": "oojjrs@gmail.com"
+  }
+}
