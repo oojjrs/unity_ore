@@ -1,6 +1,5 @@
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace oojjrs.ore
@@ -41,19 +40,19 @@ namespace oojjrs.ore
             StoreType = null;
         }
 
-        public static Task<ReporterResponse> SendEventAsync(string name, string message = null, Func<string> getPropertiesJson = null, CancellationToken cancellationToken = default)
+        public static void SendEvent(string name, string message = null, Func<string> getPropertiesJson = null, CancellationToken cancellationToken = default)
         {
-            return GetClient().SendEventAsync(name, message, getPropertiesJson, cancellationToken);
+            GetClient().SendEvent(name, message, getPropertiesJson, cancellationToken);
         }
 
-        public static Task<ReporterResponse> SendReportAsync(Texture2D screenshot, string summary, Func<string> getContextJson = null, CancellationToken cancellationToken = default)
+        public static void SendReport(Texture2D screenshot, string summary, Func<string> getContextJson = null, CancellationToken cancellationToken = default)
         {
-            return GetClient().SendReportAsync(screenshot, summary, getContextJson, cancellationToken);
+            GetClient().SendReport(screenshot, summary, getContextJson, cancellationToken);
         }
 
-        public static Task<ReporterResponse> SendUxAsync(string message, CancellationToken cancellationToken = default)
+        public static void SendUx(string message, CancellationToken cancellationToken = default)
         {
-            return GetClient().SendUxAsync(message, cancellationToken);
+            GetClient().SendUx(message, cancellationToken);
         }
     }
 }

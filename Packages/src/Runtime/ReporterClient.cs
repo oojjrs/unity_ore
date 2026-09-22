@@ -35,13 +35,6 @@ namespace oojjrs.ore
         }
 
         [Serializable]
-        private sealed class DocumentPayload
-        {
-            public string id;
-            public string receivedAtUtc;
-        }
-
-        [Serializable]
         private sealed class EventPayload
         {
             public ApplicationPayload application;
@@ -187,34 +180,28 @@ namespace oojjrs.ore
             };
         }
 
-        private static ReporterResponse ParseResponse(string responseBody, long statusCode)
+        private static async void SendAsync(UnityWebRequest request, CancellationToken cancellationToken)
         {
-            DocumentPayload payload;
-
-            try
+            using (request)
             {
-                payload = JsonUtility.FromJson<DocumentPayload>(responseBody);
+                try
+                {
+                    await WaitForCompletionAsync(request, cancellationToken);
+
+                    if (request.result != UnityWebRequest.Result.Success)
+                    {
+                        var responseBody = (request.downloadHandler != null) ? request.downloadHandler.text : string.Empty;
+                        throw new ReporterException(request.error ?? "Reporter request failed.", request.responseCode, responseBody);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception);
+                }
             }
-            catch (ArgumentException e)
-            {
-                throw new ReporterException("Reporter returned an invalid success response.", statusCode, responseBody, e);
-            }
-
-            if ((payload == null) || (Guid.TryParse(payload.id, out var id) == false) || (DateTimeOffset.TryParse(payload.receivedAtUtc, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var receivedAtUtc) == false))
-                throw new ReporterException("Reporter returned an invalid success response.", statusCode, responseBody);
-
-            return new ReporterResponse(id, receivedAtUtc);
-        }
-
-        private static async Task<ReporterResponse> SendAsync(UnityWebRequest request, CancellationToken cancellationToken)
-        {
-            await WaitForCompletionAsync(request, cancellationToken);
-
-            var responseBody = (request.downloadHandler != null) ? request.downloadHandler.text : string.Empty;
-            if (request.result != UnityWebRequest.Result.Success)
-                throw new ReporterException(request.error ?? "Reporter request failed.", request.responseCode, responseBody);
-
-            return ParseResponse(responseBody, request.responseCode);
         }
 
         private static async Task WaitForCompletionAsync(UnityWebRequest request, CancellationToken cancellationToken)
@@ -251,23 +238,21 @@ namespace oojjrs.ore
             request.SetRequestHeader("Authorization", $"Bearer {_options.IngestionToken}");
         }
 
-        public async Task<ReporterResponse> SendEventAsync(EventRequest request, CancellationToken cancellationToken = default)
+        public void SendEvent(EventRequest request, CancellationToken cancellationToken = default)
         {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
             var json = AddRawProperty(JsonUtility.ToJson(new EventPayload(request)), "properties", request.PropertiesJson);
-            using (var webRequest = new UnityWebRequest(CreateUri(_options, "events"), UnityWebRequest.kHttpVerbPOST))
-            {
-                webRequest.downloadHandler = new DownloadHandlerBuffer();
-                webRequest.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
-                webRequest.uploadHandler.contentType = "application/json";
-                ConfigureRequest(webRequest);
-                return await SendAsync(webRequest, cancellationToken);
-            }
+            var webRequest = new UnityWebRequest(CreateUri(_options, "events"), UnityWebRequest.kHttpVerbPOST);
+            webRequest.downloadHandler = new DownloadHandlerBuffer();
+            webRequest.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+            webRequest.uploadHandler.contentType = "application/json";
+            ConfigureRequest(webRequest);
+            SendAsync(webRequest, cancellationToken);
         }
 
-        public Task<ReporterResponse> SendEventAsync(string name, string message = null, Func<string> getPropertiesJson = null, CancellationToken cancellationToken = default)
+        public void SendEvent(string name, string message = null, Func<string> getPropertiesJson = null, CancellationToken cancellationToken = default)
         {
             var request = new EventRequest(name)
             {
@@ -276,10 +261,10 @@ namespace oojjrs.ore
                 PropertiesJson = (getPropertiesJson != null) ? getPropertiesJson() : null,
                 Submitter = Submitter,
             };
-            return SendEventAsync(request, cancellationToken);
+            SendEvent(request, cancellationToken);
         }
 
-        public async Task<ReporterResponse> SendReportAsync(ReportRequest request, IReadOnlyList<ReportAttachment> attachments = null, CancellationToken cancellationToken = default)
+        public void SendReport(ReportRequest request, IReadOnlyList<ReportAttachment> attachments = null, CancellationToken cancellationToken = default)
         {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
@@ -301,14 +286,12 @@ namespace oojjrs.ore
                 }
             }
 
-            using (var webRequest = UnityWebRequest.Post(CreateUri(_options, "reports"), sections))
-            {
-                ConfigureRequest(webRequest);
-                return await SendAsync(webRequest, cancellationToken);
-            }
+            var webRequest = UnityWebRequest.Post(CreateUri(_options, "reports"), sections);
+            ConfigureRequest(webRequest);
+            SendAsync(webRequest, cancellationToken);
         }
 
-        public Task<ReporterResponse> SendReportAsync(Texture2D screenshot, string summary, Func<string> getContextJson = null, CancellationToken cancellationToken = default)
+        public void SendReport(Texture2D screenshot, string summary, Func<string> getContextJson = null, CancellationToken cancellationToken = default)
         {
             var request = new ReportRequest(summary)
             {
@@ -317,12 +300,12 @@ namespace oojjrs.ore
                 ContextJson = (getContextJson != null) ? getContextJson() : null,
                 Submitter = Submitter,
             };
-            return SendReportAsync(request, CreateDefaultAttachments(screenshot), cancellationToken);
+            SendReport(request, CreateDefaultAttachments(screenshot), cancellationToken);
         }
 
-        public Task<ReporterResponse> SendUxAsync(string message, CancellationToken cancellationToken = default)
+        public void SendUx(string message, CancellationToken cancellationToken = default)
         {
-            return SendEventAsync(DefaultEventName, message, null, cancellationToken);
+            SendEvent(DefaultEventName, message, null, cancellationToken);
         }
     }
 }

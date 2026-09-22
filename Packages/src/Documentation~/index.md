@@ -7,8 +7,8 @@ UnityOre는 OOJJRS Reporter 서버를 사용하는 게임용 Unity 클라이언�
 `Assets/Resources/ReporterSettings.asset`에 서버 기본 주소, 프로젝트 키, 수집 토큰을 저장한다. 에셋은 Unity의 `Assets > Create > Ore > Reporter Settings` 메뉴로 생성한다. 기본 주소에는 `/api/v1` 경로를 포함하지 않는다.
 
 ```csharp
-await Ore.SendUxAsync($"GAME.START/{gameId}", cancellationToken);
-await Ore.SendReportAsync(screenshot, "Failed to load profile", () => JsonUtility.ToJson(profile), cancellationToken);
+Ore.SendUx($"GAME.START/{gameId}", cancellationToken);
+Ore.SendReport(screenshot, "Failed to load profile", () => JsonUtility.ToJson(profile), cancellationToken);
 ```
 
 `Ore`는 첫 전송 때 설정을 읽어 내부 클라이언트를 생성하고 이후 재사용하므로 별도 초기화 호출이 필요하지 않다. 사용자 정보가 있으면 기존 `WebReporter`처럼 `Ore.Id`, `Ore.Nickname`, `Ore.StoreType`에 지정할 수 있다.
@@ -34,11 +34,11 @@ var request = new EventRequest("game.started")
 };
 var options = new ReporterClientOptions("https://reporter.example.com", "my-game", ingestionToken);
 var client = new ReporterClient(options);
-var response = await client.SendEventAsync(request, cancellationToken);
+client.SendEvent(request, cancellationToken);
 ```
 
-## 응답과 오류
+## 전송과 오류
 
-성공하면 `ReporterResponse`가 서버 문서 ID와 UTC 수신 시각을 제공한다. HTTP 오류와 네트워크 오류는 `ReporterException`으로 반환되며 `StatusCode`, `ResponseBody`, `IsNetworkError`를 확인할 수 있다. 취소는 `OperationCanceledException`으로 반환된다.
+전송 함수는 요청을 시작한 뒤 반환값 없이 즉시 종료한다. HTTP 오류와 네트워크 오류는 Unity 로그에 기록하며 취소는 별도 오류로 기록하지 않는다.
 
-전송 함수는 Unity 메인 스레드에서 호출해야 하며 완료 continuation은 호출 시점의 Unity 동기화 컨텍스트를 따른다.
+전송 함수는 Unity 메인 스레드에서 호출해야 한다.

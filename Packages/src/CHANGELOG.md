@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0
+
+- 전송 API를 반환값 없는 `SendEvent`, `SendReport`, `SendUx`로 변경했습니다.
+- `ReporterResponse`를 제거하고 전송 실패를 Unity 로그에 기록하도록 변경했습니다.
+
 ## 1.0.1
 
 - ReporterSettings 생성 메뉴를 `OOJJRS`에서 `Ore`로 변경했습니다.
