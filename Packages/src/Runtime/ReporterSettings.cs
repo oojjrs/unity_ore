@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace oojjrs.ore
 {
-    [CreateAssetMenu(fileName = "ReporterSettings", menuName = "OOJJRS/Reporter Settings")]
+    [CreateAssetMenu(fileName = "ReporterSettings", menuName = "Ore/Reporter Settings")]
     public sealed class ReporterSettings : ScriptableObject
     {
         [SerializeField]

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+- ReporterSettings 생성 메뉴를 `OOJJRS`에서 `Ore`로 변경했습니다.
+
 ## 1.0.0
 
 - Unity 프로젝트를 `Packages/src` 기반 UPM 패키지 구조로 전환했습니다.

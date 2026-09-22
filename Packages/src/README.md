@@ -13,7 +13,7 @@ OOJJRS Reporter 서버 호출을 위한 Unity 패키지다.
 
 ## 사용
 
-`Assets/Resources/ReporterSettings.asset`에 서버 주소, 프로젝트 키, 수집 토큰을 저장한다. 에셋은 Unity의 `Assets > Create > OOJJRS > Reporter Settings` 메뉴로 생성한다.
+`Assets/Resources/ReporterSettings.asset`에 서버 주소, 프로젝트 키, 수집 토큰을 저장한다. 에셋은 Unity의 `Assets > Create > Ore > Reporter Settings` 메뉴로 생성한다.
 
 ```csharp
 await Ore.SendUxAsync($"GAME.START/{gameId}", cancellationToken);
