@@ -23,7 +23,7 @@ Ore.SendReport(screenshot, "Failed to load profile", () => JsonUtility.ToJson(pr
 
 간편 보고서 호출은 Unity 애플리케이션 정보와 사용자 정보, JPEG 스크린샷, `Player.log`의 마지막 2MB까지를 자동으로 구성한다. 스크린샷과 컨텍스트 함수는 필요하지 않으면 생략할 수 있다.
 
-직접 구성한 `ReportRequest`, `EventRequest`, `ReportAttachment`를 받는 오버로드는 커스텀 전송에 사용한다. `BaseUrl`에는 `/api` 이전의 서버 주소를 지정한다. `ContextJson`과 `PropertiesJson`에는 JSON 값 하나를 문자열로 전달하며, 값이 비어 있으면 해당 속성을 전송하지 않는다. 호출은 Unity 메인 스레드에서 시작해야 한다.
+직접 구성한 `ReportRequest`, `EventRequest`, `ReportAttachment`를 받는 오버로드는 커스텀 전송에 사용한다. `BaseUrl`에는 `/api` 이전의 서버 주소를 지정한다. `ContextJson`과 `PropertiesJson`에는 JSON 값 하나를 문자열로 전달하며, 값이 비어 있거나 JSON `null`이면 빈 객체(`{}`)로 전송한다. 호출은 Unity 메인 스레드에서 시작해야 한다.
 
 ## 책임 범위
 

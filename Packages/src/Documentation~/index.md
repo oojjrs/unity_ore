@@ -17,13 +17,13 @@ Ore.SendReport(screenshot, "Failed to load profile", () => JsonUtility.ToJson(pr
 
 ## 커스텀 보고서
 
-`ReportRequest`의 `Summary`는 필수다. `ClientReportId`를 지정하면 서버가 중복 제출을 같은 보고서로 처리할 수 있다. `ContextJson`은 프로필이나 게임 상태처럼 호출 프로젝트가 직렬화한 JSON 값이다.
+`ReportRequest`의 `Summary`는 첨부파일 없이 내용을 전송할 때 사용한다. `ClientReportId`를 지정하면 서버가 중복 제출을 같은 보고서로 처리할 수 있다. `ContextJson`은 프로필이나 게임 상태처럼 호출 프로젝트가 직렬화한 JSON 값이며, 비어 있거나 JSON `null`이면 빈 객체(`{}`)로 전송한다.
 
 첨부파일은 `ReportAttachment`로 전달한다. 일반 바이트 첨부 외에 UTF-8 텍스트, JPEG, PNG 생성 함수를 제공한다. 서버의 첨부 개수와 크기 제한은 서버 설정을 따른다.
 
 ## 커스텀 이벤트
 
-`EventRequest`의 `Name`은 필수다. `PropertiesJson`에는 이벤트별 속성을 JSON 값으로 전달한다.
+`EventRequest`의 `Name`은 필수다. `PropertiesJson`에는 이벤트별 속성을 JSON 값으로 전달하며, 비어 있거나 JSON `null`이면 빈 객체(`{}`)로 전송한다.
 
 ```csharp
 var request = new EventRequest("game.started")

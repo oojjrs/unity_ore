@@ -13,6 +13,7 @@ namespace oojjrs.ore
     public sealed class ReporterClient
     {
         private const string DefaultEventName = "ux";
+        private const string EmptyJsonObject = "{}";
         private const int MaxPlayerLogBytes = 2 * 1024 * 1024;
 
         [Serializable]
@@ -48,7 +49,7 @@ namespace oojjrs.ore
                 application = (request.Application != null) ? new ApplicationPayload(request.Application) : null;
                 message = ToPayloadString(request.Message);
                 name = ToPayloadString(request.Name);
-                occurredAtUtc = request.OccurredAtUtc.HasValue ? request.OccurredAtUtc.Value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture) : string.Empty;
+                occurredAtUtc = request.OccurredAtUtc.HasValue ? request.OccurredAtUtc.Value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture) : null;
                 submitter = (request.Submitter != null) ? new SubmitterPayload(request.Submitter) : null;
             }
         }
@@ -68,7 +69,7 @@ namespace oojjrs.ore
                 application = (request.Application != null) ? new ApplicationPayload(request.Application) : null;
                 clientReportId = ToPayloadString(request.ClientReportId);
                 description = ToPayloadString(request.Description);
-                occurredAtUtc = request.OccurredAtUtc.HasValue ? request.OccurredAtUtc.Value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture) : string.Empty;
+                occurredAtUtc = request.OccurredAtUtc.HasValue ? request.OccurredAtUtc.Value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture) : null;
                 submitter = (request.Submitter != null) ? new SubmitterPayload(request.Submitter) : null;
                 summary = ToPayloadString(request.Summary);
             }
@@ -101,8 +102,8 @@ namespace oojjrs.ore
 
         private static string AddRawProperty(string json, string propertyName, string rawJson)
         {
-            if (string.IsNullOrWhiteSpace(rawJson))
-                return json;
+            if (string.IsNullOrWhiteSpace(rawJson) || string.Equals(rawJson.Trim(), "null", StringComparison.Ordinal))
+                rawJson = EmptyJsonObject;
 
             return json.Insert(json.Length - 1, $",\"{propertyName}\":{rawJson}");
         }
