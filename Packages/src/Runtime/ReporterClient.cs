@@ -41,7 +41,6 @@ namespace oojjrs.ore
             public ApplicationPayload application;
             public string message;
             public string name;
-            public string occurredAtUtc;
             public SubmitterPayload submitter;
 
             public EventPayload(EventRequest request)
@@ -49,7 +48,6 @@ namespace oojjrs.ore
                 application = (request.Application != null) ? new ApplicationPayload(request.Application) : null;
                 message = ToPayloadString(request.Message);
                 name = ToPayloadString(request.Name);
-                occurredAtUtc = request.OccurredAtUtc.HasValue ? request.OccurredAtUtc.Value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture) : null;
                 submitter = (request.Submitter != null) ? new SubmitterPayload(request.Submitter) : null;
             }
         }
@@ -60,7 +58,6 @@ namespace oojjrs.ore
             public ApplicationPayload application;
             public string clientReportId;
             public string description;
-            public string occurredAtUtc;
             public SubmitterPayload submitter;
             public string summary;
 
@@ -69,7 +66,6 @@ namespace oojjrs.ore
                 application = (request.Application != null) ? new ApplicationPayload(request.Application) : null;
                 clientReportId = ToPayloadString(request.ClientReportId);
                 description = ToPayloadString(request.Description);
-                occurredAtUtc = request.OccurredAtUtc.HasValue ? request.OccurredAtUtc.Value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture) : null;
                 submitter = (request.Submitter != null) ? new SubmitterPayload(request.Submitter) : null;
                 summary = ToPayloadString(request.Summary);
             }
@@ -106,6 +102,15 @@ namespace oojjrs.ore
                 rawJson = EmptyJsonObject;
 
             return json.Insert(json.Length - 1, $",\"{propertyName}\":{rawJson}");
+        }
+
+        private static string AddOccurredAtUtc(string json, DateTimeOffset? occurredAtUtc)
+        {
+            if (occurredAtUtc.HasValue == false)
+                return json;
+
+            var value = occurredAtUtc.Value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
+            return AddRawProperty(json, "occurredAtUtc", $"\"{value}\"");
         }
 
         private static string CreateUri(ReporterClientOptions options, string collection)
@@ -192,7 +197,11 @@ namespace oojjrs.ore
                     if (request.result != UnityWebRequest.Result.Success)
                     {
                         var responseBody = (request.downloadHandler != null) ? request.downloadHandler.text : string.Empty;
-                        throw new ReporterException(request.error ?? "Reporter request failed.", request.responseCode, responseBody);
+                        var message = request.error ?? "Reporter request failed.";
+                        if (string.IsNullOrWhiteSpace(responseBody) == false)
+                            message = $"{message}\n{responseBody}";
+
+                        throw new ReporterException(message, request.responseCode, responseBody);
                     }
                 }
                 catch (OperationCanceledException)
@@ -249,7 +258,7 @@ namespace oojjrs.ore
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            var json = AddRawProperty(JsonUtility.ToJson(new EventPayload(request)), "properties", request.PropertiesJson);
+            var json = AddRawProperty(AddOccurredAtUtc(JsonUtility.ToJson(new EventPayload(request)), request.OccurredAtUtc), "properties", request.PropertiesJson);
             var webRequest = new UnityWebRequest(CreateUri(_options, "events"), UnityWebRequest.kHttpVerbPOST);
             webRequest.downloadHandler = new DownloadHandlerBuffer();
             webRequest.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
@@ -275,7 +284,7 @@ namespace oojjrs.ore
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            var reportJson = AddRawProperty(JsonUtility.ToJson(new ReportPayload(request)), "context", request.ContextJson);
+            var reportJson = AddRawProperty(AddOccurredAtUtc(JsonUtility.ToJson(new ReportPayload(request)), request.OccurredAtUtc), "context", request.ContextJson);
             var sections = new List<IMultipartFormSection>((attachments != null) ? attachments.Count + 1 : 1)
             {
                 new MultipartFormDataSection("report", reportJson, Encoding.UTF8, "application/json"),
