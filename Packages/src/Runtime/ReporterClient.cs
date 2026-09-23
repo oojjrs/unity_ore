@@ -26,11 +26,11 @@ namespace oojjrs.ore
 
             public ApplicationPayload(ReportApplication application)
             {
-                build = application.Build;
-                engine = application.Engine;
-                platform = application.Platform;
-                store = application.Store;
-                version = application.Version;
+                build = ToPayloadString(application.Build);
+                engine = ToPayloadString(application.Engine);
+                platform = ToPayloadString(application.Platform);
+                store = ToPayloadString(application.Store);
+                version = ToPayloadString(application.Version);
             }
         }
 
@@ -46,9 +46,9 @@ namespace oojjrs.ore
             public EventPayload(EventRequest request)
             {
                 application = (request.Application != null) ? new ApplicationPayload(request.Application) : null;
-                message = request.Message;
-                name = request.Name;
-                occurredAtUtc = request.OccurredAtUtc.HasValue ? request.OccurredAtUtc.Value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture) : null;
+                message = ToPayloadString(request.Message);
+                name = ToPayloadString(request.Name);
+                occurredAtUtc = request.OccurredAtUtc.HasValue ? request.OccurredAtUtc.Value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture) : string.Empty;
                 submitter = (request.Submitter != null) ? new SubmitterPayload(request.Submitter) : null;
             }
         }
@@ -66,11 +66,11 @@ namespace oojjrs.ore
             public ReportPayload(ReportRequest request)
             {
                 application = (request.Application != null) ? new ApplicationPayload(request.Application) : null;
-                clientReportId = request.ClientReportId;
-                description = request.Description;
-                occurredAtUtc = request.OccurredAtUtc.HasValue ? request.OccurredAtUtc.Value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture) : null;
+                clientReportId = ToPayloadString(request.ClientReportId);
+                description = ToPayloadString(request.Description);
+                occurredAtUtc = request.OccurredAtUtc.HasValue ? request.OccurredAtUtc.Value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture) : string.Empty;
                 submitter = (request.Submitter != null) ? new SubmitterPayload(request.Submitter) : null;
-                summary = request.Summary;
+                summary = ToPayloadString(request.Summary);
             }
         }
 
@@ -82,8 +82,8 @@ namespace oojjrs.ore
 
             public SubmitterPayload(ReportSubmitter submitter)
             {
-                displayName = submitter.DisplayName;
-                id = submitter.Id;
+                displayName = ToPayloadString(submitter.DisplayName);
+                id = ToPayloadString(submitter.Id);
             }
         }
 
@@ -202,6 +202,11 @@ namespace oojjrs.ore
                     Debug.LogException(exception);
                 }
             }
+        }
+
+        private static string ToPayloadString(string value)
+        {
+            return value ?? string.Empty;
         }
 
         private static async Task WaitForCompletionAsync(UnityWebRequest request, CancellationToken cancellationToken)

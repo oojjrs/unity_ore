@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+- 전송 payload의 `null` 문자열을 빈 문자열로 정규화하도록 수정했습니다.
+
 ## 1.1.0
 
 - 전송 API를 반환값 없는 `SendEvent`, `SendReport`, `SendUx`로 변경했습니다.
