@@ -11,11 +11,15 @@ namespace oojjrs.ore
 
         public ReporterClientOptions(string baseUrl, string projectKey, string ingestionToken, int timeoutSeconds = 30)
         {
-            if ((Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri) == false) || ((baseUri.Scheme != Uri.UriSchemeHttp) && (baseUri.Scheme != Uri.UriSchemeHttps)))
+            baseUrl = baseUrl ?? string.Empty;
+            projectKey = projectKey ?? string.Empty;
+            ingestionToken = ingestionToken ?? string.Empty;
+
+            if ((baseUrl.Length > 0) && ((Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri) == false) || ((baseUri.Scheme != Uri.UriSchemeHttp) && (baseUri.Scheme != Uri.UriSchemeHttps))))
                 throw new ArgumentException("The Reporter base URL must be an absolute HTTP or HTTPS URL.", nameof(baseUrl));
-            if (IsProjectKey(projectKey) == false)
+            if ((projectKey.Length > 0) && (IsProjectKey(projectKey) == false))
                 throw new ArgumentException("The project key must contain only lowercase letters, digits, or hyphens and must not exceed 63 characters.", nameof(projectKey));
-            if (string.IsNullOrWhiteSpace(ingestionToken))
+            if ((ingestionToken.Length > 0) && string.IsNullOrWhiteSpace(ingestionToken))
                 throw new ArgumentException("The ingestion token is required.", nameof(ingestionToken));
             if (timeoutSeconds <= 0)
                 throw new ArgumentOutOfRangeException(nameof(timeoutSeconds));

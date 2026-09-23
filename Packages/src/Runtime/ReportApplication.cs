@@ -15,7 +15,7 @@ namespace oojjrs.ore
                 Build = UnityEngine.Application.buildGUID,
                 Engine = $"Unity {UnityEngine.Application.unityVersion}",
                 Platform = UnityEngine.Application.platform.ToString(),
-                Store = store,
+                Store = store ?? string.Empty,
                 Version = UnityEngine.Application.version,
             };
         }

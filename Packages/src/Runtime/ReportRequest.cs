@@ -14,10 +14,7 @@ namespace oojjrs.ore
 
         public ReportRequest(string summary)
         {
-            if (string.IsNullOrWhiteSpace(summary))
-                throw new ArgumentException("The report summary is required.", nameof(summary));
-
-            Summary = summary;
+            Summary = summary ?? string.Empty;
         }
     }
 }

@@ -13,10 +13,7 @@ namespace oojjrs.ore
 
         public EventRequest(string name)
         {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("The event name is required.", nameof(name));
-
-            Name = name;
+            Name = name ?? string.Empty;
         }
     }
 }

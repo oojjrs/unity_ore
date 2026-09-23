@@ -12,7 +12,7 @@ namespace oojjrs.ore
         {
         }
 
-        public ReporterException(string message, long statusCode, string responseBody, Exception innerException) : base(message, innerException)
+        public ReporterException(string message, long statusCode, string responseBody, Exception innerException) : base(message ?? string.Empty, innerException)
         {
             ResponseBody = responseBody ?? string.Empty;
             StatusCode = statusCode;

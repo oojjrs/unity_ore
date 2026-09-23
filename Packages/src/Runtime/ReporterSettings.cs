@@ -14,9 +14,9 @@ namespace oojjrs.ore
         [SerializeField]
         private int _timeoutSeconds = 30;
 
-        public string BaseUrl => _baseUrl;
-        public string IngestionToken => _ingestionToken;
-        public string ProjectKey => _projectKey;
+        public string BaseUrl => _baseUrl ?? string.Empty;
+        public string IngestionToken => _ingestionToken ?? string.Empty;
+        public string ProjectKey => _projectKey ?? string.Empty;
         public int TimeoutSeconds => _timeoutSeconds;
     }
 }

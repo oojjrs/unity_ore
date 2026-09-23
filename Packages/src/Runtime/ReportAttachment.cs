@@ -12,11 +12,14 @@ namespace oojjrs.ore
 
         public ReportAttachment(string fileName, byte[] data, string contentType = "application/octet-stream")
         {
-            if (string.IsNullOrWhiteSpace(fileName))
+            fileName = fileName ?? string.Empty;
+            contentType = contentType ?? string.Empty;
+
+            if ((fileName.Length > 0) && string.IsNullOrWhiteSpace(fileName))
                 throw new ArgumentException("The attachment file name is required.", nameof(fileName));
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
-            if (string.IsNullOrWhiteSpace(contentType))
+            if ((contentType.Length > 0) && string.IsNullOrWhiteSpace(contentType))
                 throw new ArgumentException("The attachment content type is required.", nameof(contentType));
 
             ContentType = contentType;
@@ -44,10 +47,7 @@ namespace oojjrs.ore
 
         public static ReportAttachment CreateText(string fileName, string text)
         {
-            if (text == null)
-                throw new ArgumentNullException(nameof(text));
-
-            return new ReportAttachment(fileName, Encoding.UTF8.GetBytes(text), "text/plain; charset=utf-8");
+            return new ReportAttachment(fileName, Encoding.UTF8.GetBytes(text ?? string.Empty), "text/plain; charset=utf-8");
         }
     }
 }
