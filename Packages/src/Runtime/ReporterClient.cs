@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,7 +15,8 @@ namespace oojjrs.ore
     {
         private const string DefaultEventName = "ux";
         private const string EmptyJsonObject = "{}";
-        private const int MaxPlayerLogBytes = 2 * 1024 * 1024;
+        private const string ReportArchiveFileName = "report.zip";
+        private const string ReportMetadataFileName = "report.json";
 
         [Serializable]
         private sealed class ApplicationPayload
@@ -96,6 +98,13 @@ namespace oojjrs.ore
             Application = ReportApplication.CreateUnity();
         }
 
+        private static void AddArchiveEntry(ZipArchive archive, string entryName, byte[] data)
+        {
+            var entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
+            using (var stream = entry.Open())
+                stream.Write(data, 0, data.Length);
+        }
+
         private static string AddRawProperty(string json, string propertyName, string rawJson)
         {
             if (string.IsNullOrWhiteSpace(rawJson) || string.Equals(rawJson.Trim(), "null", StringComparison.Ordinal))
@@ -141,26 +150,11 @@ namespace oojjrs.ore
             {
                 using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
                 {
-                    var length = (int)Math.Min(stream.Length, MaxPlayerLogBytes);
-                    var data = new byte[length];
-                    stream.Seek(-length, SeekOrigin.End);
-
-                    var offset = 0;
-                    while (offset < length)
+                    using (var dataStream = new MemoryStream())
                     {
-                        var read = stream.Read(data, offset, length - offset);
-                        if (read == 0)
-                            break;
-
-                        offset += read;
+                        stream.CopyTo(dataStream);
+                        return new ReportAttachment("Player.log", dataStream.ToArray(), "text/plain; charset=utf-8");
                     }
-
-                    if (offset == length)
-                        return new ReportAttachment("Player.log", data, "text/plain; charset=utf-8");
-
-                    var partialData = new byte[offset];
-                    Array.Copy(data, partialData, offset);
-                    return new ReportAttachment("Player.log", partialData, "text/plain; charset=utf-8");
                 }
             }
             catch (IOException)
@@ -170,6 +164,33 @@ namespace oojjrs.ore
             catch (UnauthorizedAccessException)
             {
                 return null;
+            }
+        }
+
+        private static byte[] CreateReportArchive(string reportJson, IReadOnlyList<ReportAttachment> attachments)
+        {
+            using (var stream = new MemoryStream())
+            {
+                using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, true))
+                {
+                    AddArchiveEntry(archive, ReportMetadataFileName, Encoding.UTF8.GetBytes(reportJson));
+
+                    if (attachments != null)
+                    {
+                        for (var index = 0; index < attachments.Count; ++index)
+                        {
+                            var attachment = attachments[index];
+                            if (attachment == null)
+                                throw new ArgumentException("Attachments must not contain null entries.", nameof(attachments));
+
+                            var fileName = Path.GetFileName(attachment.FileName.Replace('\\', '/'));
+                            var entryName = $"attachments/{((fileName.Length > 0) ? fileName : $"attachment-{index + 1}")}";
+                            AddArchiveEntry(archive, entryName, attachment.Data);
+                        }
+                    }
+                }
+
+                return stream.ToArray();
             }
         }
 
@@ -285,23 +306,11 @@ namespace oojjrs.ore
                 throw new ArgumentNullException(nameof(request));
 
             var reportJson = AddRawProperty(AddOccurredAtUtc(JsonUtility.ToJson(new ReportPayload(request)), request.OccurredAtUtc), "context", request.ContextJson);
-            var sections = new List<IMultipartFormSection>((attachments != null) ? attachments.Count + 1 : 1)
-            {
-                new MultipartFormDataSection("report", reportJson, Encoding.UTF8, "application/json"),
-            };
-
-            if (attachments != null)
-            {
-                foreach (var attachment in attachments)
-                {
-                    if (attachment == null)
-                        throw new ArgumentException("Attachments must not contain null entries.", nameof(attachments));
-
-                    sections.Add(new MultipartFormFileSection("attachments", attachment.Data, attachment.FileName, attachment.ContentType));
-                }
-            }
-
-            var webRequest = UnityWebRequest.Post(CreateUri(_options, "reports"), sections);
+            var webRequest = new UnityWebRequest(CreateUri(_options, "reports"), UnityWebRequest.kHttpVerbPOST);
+            webRequest.downloadHandler = new DownloadHandlerBuffer();
+            webRequest.uploadHandler = new UploadHandlerRaw(CreateReportArchive(reportJson, attachments));
+            webRequest.uploadHandler.contentType = "application/zip";
+            webRequest.SetRequestHeader("Content-Disposition", $"attachment; filename=\"{ReportArchiveFileName}\"");
             ConfigureRequest(webRequest);
             SendAsync(webRequest, cancellationToken);
         }

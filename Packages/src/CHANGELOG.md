@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.6
+
+- 전체 `Player.log`를 포함한 보고서 JSON과 첨부파일을 `report.zip` 하나로 압축해 전송하도록 변경했습니다.
+
 ## 1.1.5
 
 - FHD 범위를 초과하는 스크린샷만 종횡비를 유지해 축소하고 JPEG `Texture2D`로 반환하는 `Ore.GetScreenshotAsJpeg`를 추가했습니다.

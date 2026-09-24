@@ -21,7 +21,7 @@ Ore.SendReport(screenshot, "Failed to load profile", () => JsonUtility.ToJson(pr
 
 `Ore`는 첫 전송 때 설정을 읽어 클라이언트를 생성하고 이후 재사용한다. 별도 초기화 호출은 필요하지 않다. 사용자 정보가 있으면 기존 `WebReporter`처럼 `Ore.Id`, `Ore.Nickname`, `Ore.StoreType`에 지정할 수 있다.
 
-간편 보고서 호출은 Unity 애플리케이션 정보와 사용자 정보, JPEG 스크린샷, `Player.log`의 마지막 2MB까지를 자동으로 구성한다. 스크린샷과 컨텍스트 함수는 필요하지 않으면 생략할 수 있다.
+간편 보고서 호출은 Unity 애플리케이션 정보와 사용자 정보, JPEG 스크린샷, 전체 `Player.log`를 자동으로 구성한다. 보고서 JSON과 첨부파일은 `report.zip` 하나로 압축해 전송하며, ZIP 전체 크기 제한은 서버 설정을 따른다. 스크린샷과 컨텍스트 함수는 필요하지 않으면 생략할 수 있다.
 
 직접 구성한 `ReportRequest`, `EventRequest`, `ReportAttachment`를 받는 오버로드는 커스텀 전송에 사용한다. `BaseUrl`에는 `/api` 이전의 서버 주소를 지정한다. `ContextJson`과 `PropertiesJson`에는 JSON 값 하나를 문자열로 전달하며, 값이 비어 있거나 JSON `null`이면 빈 객체(`{}`)로 전송한다. 호출은 Unity 메인 스레드에서 시작해야 한다.
 

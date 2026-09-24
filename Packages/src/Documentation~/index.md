@@ -13,13 +13,13 @@ Ore.SendReport(screenshot, "Failed to load profile", () => JsonUtility.ToJson(pr
 
 `Ore`는 첫 전송 때 설정을 읽어 내부 클라이언트를 생성하고 이후 재사용하므로 별도 초기화 호출이 필요하지 않다. 사용자 정보가 있으면 기존 `WebReporter`처럼 `Ore.Id`, `Ore.Nickname`, `Ore.StoreType`에 지정할 수 있다.
 
-간편 보고서 호출은 애플리케이션 정보와 사용자 정보, JPEG 스크린샷, `Player.log`의 마지막 2MB까지를 자동으로 구성한다. 스크린샷과 컨텍스트 함수는 필요하지 않으면 생략할 수 있다.
+간편 보고서 호출은 애플리케이션 정보와 사용자 정보, JPEG 스크린샷, 전체 `Player.log`를 자동으로 구성한다. 보고서 JSON과 첨부파일은 `report.zip` 하나로 압축해 전송하며, ZIP 전체 크기 제한은 서버 설정을 따른다. 스크린샷과 컨텍스트 함수는 필요하지 않으면 생략할 수 있다.
 
 ## 커스텀 보고서
 
 `ReportRequest`의 `Summary`는 첨부파일 없이 내용을 전송할 때 사용한다. `ClientReportId`를 지정하면 서버가 중복 제출을 같은 보고서로 처리할 수 있다. `ContextJson`은 프로필이나 게임 상태처럼 호출 프로젝트가 직렬화한 JSON 값이며, 비어 있거나 JSON `null`이면 빈 객체(`{}`)로 전송한다.
 
-첨부파일은 `ReportAttachment`로 전달한다. 일반 바이트 첨부 외에 UTF-8 텍스트, JPEG, PNG 생성 함수를 제공한다. 서버의 첨부 개수와 크기 제한은 서버 설정을 따른다.
+첨부파일은 `ReportAttachment`로 전달한다. 일반 바이트 첨부 외에 UTF-8 텍스트, JPEG, PNG 생성 함수를 제공한다. 클라이언트는 루트의 `report.json`과 `attachments` 경로의 첨부파일을 ZIP 하나로 구성하며, 전체 ZIP 크기 제한은 서버 설정을 따른다.
 
 ## 커스텀 이벤트
 
