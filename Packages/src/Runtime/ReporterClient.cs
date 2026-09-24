@@ -19,7 +19,6 @@ namespace oojjrs.ore
         private const string MatchVerificationDataFileName = "match-verification.bin";
         private const string MatchVerificationMetadataFileName = "match-verification.json";
         private const string ReportArchiveFileName = "report.zip";
-        private const string ReportMetadataFileName = "report.json";
 
         [Serializable]
         private sealed class ApplicationPayload
@@ -71,25 +70,6 @@ namespace oojjrs.ore
                 clientMatchVerificationId = ToPayloadString(request.ClientMatchVerificationId);
                 matchId = ToPayloadString(request.MatchId);
                 submitter = (request.Submitter != null) ? new SubmitterPayload(request.Submitter) : null;
-            }
-        }
-
-        [Serializable]
-        private sealed class ReportPayload
-        {
-            public ApplicationPayload application;
-            public string clientReportId;
-            public string description;
-            public SubmitterPayload submitter;
-            public string summary;
-
-            public ReportPayload(ReportRequest request)
-            {
-                application = (request.Application != null) ? new ApplicationPayload(request.Application) : null;
-                clientReportId = ToPayloadString(request.ClientReportId);
-                description = ToPayloadString(request.Description);
-                submitter = (request.Submitter != null) ? new SubmitterPayload(request.Submitter) : null;
-                summary = ToPayloadString(request.Summary);
             }
         }
 
@@ -187,13 +167,14 @@ namespace oojjrs.ore
             }
         }
 
-        private static byte[] CreateArchive(string metadataFileName, string metadataJson, IReadOnlyList<ReportAttachment> attachments)
+        private static byte[] CreateArchive(IReadOnlyList<ReportAttachment> attachments, string metadataFileName = null, string metadataJson = null, string attachmentDirectory = null)
         {
             using (var stream = new MemoryStream())
             {
                 using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, true))
                 {
-                    AddArchiveEntry(archive, metadataFileName, Encoding.UTF8.GetBytes(metadataJson));
+                    if (metadataFileName != null)
+                        AddArchiveEntry(archive, metadataFileName, Encoding.UTF8.GetBytes(metadataJson));
 
                     if (attachments != null)
                     {
@@ -204,7 +185,8 @@ namespace oojjrs.ore
                                 throw new ArgumentException("Attachments must not contain null entries.", nameof(attachments));
 
                             var fileName = Path.GetFileName(attachment.FileName.Replace('\\', '/'));
-                            var entryName = $"attachments/{((fileName.Length > 0) ? fileName : $"attachment-{index + 1}")}";
+                            var entryFileName = (fileName.Length > 0) ? fileName : $"attachment-{index + 1}";
+                            var entryName = (attachmentDirectory != null) ? $"{attachmentDirectory}/{entryFileName}" : entryFileName;
                             AddArchiveEntry(archive, entryName, attachment.Data);
                         }
                     }
@@ -340,7 +322,7 @@ namespace oojjrs.ore
 
             var metadataJson = AddRawProperty(AddOccurredAtUtc(JsonUtility.ToJson(new MatchVerificationPayload(request)), request.OccurredAtUtc), "context", request.ContextJson);
             var attachments = new[] { new ReportAttachment(MatchVerificationDataFileName, data) };
-            var webRequest = CreateArchiveRequest("match-verifications", MatchVerificationArchiveFileName, CreateArchive(MatchVerificationMetadataFileName, metadataJson, attachments));
+            var webRequest = CreateArchiveRequest("match-verifications", MatchVerificationArchiveFileName, CreateArchive(attachments, MatchVerificationMetadataFileName, metadataJson, "attachments"));
             SendAsync(webRequest, cancellationToken);
         }
 
@@ -361,21 +343,18 @@ namespace oojjrs.ore
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            var reportJson = AddRawProperty(AddOccurredAtUtc(JsonUtility.ToJson(new ReportPayload(request)), request.OccurredAtUtc), "context", request.ContextJson);
-            var webRequest = CreateArchiveRequest("reports", ReportArchiveFileName, CreateArchive(ReportMetadataFileName, reportJson, attachments));
-            SendAsync(webRequest, cancellationToken);
+            SendReportArchive(attachments, cancellationToken);
         }
 
         public void SendReport(Texture2D screenshot, string summary, Func<string> getContextJson = null, CancellationToken cancellationToken = default)
         {
-            var request = new ReportRequest(summary)
-            {
-                Application = Application,
-                ClientReportId = Guid.NewGuid().ToString("N"),
-                ContextJson = (getContextJson != null) ? getContextJson() : null,
-                Submitter = Submitter,
-            };
-            SendReport(request, CreateDefaultAttachments(screenshot), cancellationToken);
+            SendReportArchive(CreateDefaultAttachments(screenshot), cancellationToken);
+        }
+
+        private void SendReportArchive(IReadOnlyList<ReportAttachment> attachments, CancellationToken cancellationToken)
+        {
+            var webRequest = CreateArchiveRequest("reports", ReportArchiveFileName, CreateArchive(attachments));
+            SendAsync(webRequest, cancellationToken);
         }
 
         public void SendUx(string message, CancellationToken cancellationToken = default)
