@@ -34,36 +34,30 @@ namespace oojjrs.ore
         public static Texture2D GetScreenshotAsJpeg()
         {
             var screenshot = ScreenCapture.CaptureScreenshotAsTexture();
+            if ((screenshot.width <= 1920) && (screenshot.height <= 1080))
+                return screenshot;
+
             var activeRenderTexture = RenderTexture.active;
-            var sourceTexture = screenshot;
             RenderTexture renderTexture = null;
             Texture2D resizedTexture = null;
-            Texture2D convertedTexture = null;
             try
             {
-                if ((screenshot.width > 1920) || (screenshot.height > 1080))
-                {
-                    var scale = Mathf.Min(1920f / screenshot.width, 1080f / screenshot.height);
-                    var width = Mathf.RoundToInt(screenshot.width * scale);
-                    var height = Mathf.RoundToInt(screenshot.height * scale);
-                    renderTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.Default, RenderTextureReadWrite.Default);
-                    resizedTexture = new Texture2D(width, height, TextureFormat.RGB24, false);
+                var scale = Mathf.Min(1920f / screenshot.width, 1080f / screenshot.height);
+                var width = Mathf.RoundToInt(screenshot.width * scale);
+                var height = Mathf.RoundToInt(screenshot.height * scale);
+                renderTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.Default, RenderTextureReadWrite.Default);
+                resizedTexture = new Texture2D(width, height, TextureFormat.RGB24, false);
 
-                    Graphics.Blit(screenshot, renderTexture);
-                    RenderTexture.active = renderTexture;
-                    resizedTexture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
-                    resizedTexture.Apply();
-                    sourceTexture = resizedTexture;
-                }
-
-                convertedTexture = new Texture2D(2, 2, TextureFormat.RGB24, false);
-                convertedTexture.LoadImage(sourceTexture.EncodeToJPG(90));
-                return convertedTexture;
+                Graphics.Blit(screenshot, renderTexture);
+                RenderTexture.active = renderTexture;
+                resizedTexture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+                resizedTexture.Apply();
+                return resizedTexture;
             }
             catch
             {
-                if (convertedTexture != null)
-                    UnityEngine.Object.Destroy(convertedTexture);
+                if (resizedTexture != null)
+                    UnityEngine.Object.Destroy(resizedTexture);
 
                 throw;
             }
@@ -72,8 +66,6 @@ namespace oojjrs.ore
                 RenderTexture.active = activeRenderTexture;
                 if (renderTexture != null)
                     RenderTexture.ReleaseTemporary(renderTexture);
-                if (resizedTexture != null)
-                    UnityEngine.Object.Destroy(resizedTexture);
 
                 UnityEngine.Object.Destroy(screenshot);
             }

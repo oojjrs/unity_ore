@@ -27,7 +27,7 @@ namespace oojjrs.ore
             FileName = fileName;
         }
 
-        public static ReportAttachment CreateJpeg(string fileName, Texture2D texture, int quality = 75)
+        public static ReportAttachment CreateJpeg(string fileName, Texture2D texture, int quality = 90)
         {
             if (texture == null)
                 throw new ArgumentNullException(nameof(texture));
