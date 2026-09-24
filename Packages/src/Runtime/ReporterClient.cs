@@ -15,6 +15,9 @@ namespace oojjrs.ore
     {
         private const string DefaultEventName = "ux";
         private const string EmptyJsonObject = "{}";
+        private const string MatchVerificationArchiveFileName = "match-verification.zip";
+        private const string MatchVerificationDataFileName = "match-verification.bin";
+        private const string MatchVerificationMetadataFileName = "match-verification.json";
         private const string ReportArchiveFileName = "report.zip";
         private const string ReportMetadataFileName = "report.json";
 
@@ -50,6 +53,23 @@ namespace oojjrs.ore
                 application = (request.Application != null) ? new ApplicationPayload(request.Application) : null;
                 message = ToPayloadString(request.Message);
                 name = ToPayloadString(request.Name);
+                submitter = (request.Submitter != null) ? new SubmitterPayload(request.Submitter) : null;
+            }
+        }
+
+        [Serializable]
+        private sealed class MatchVerificationPayload
+        {
+            public ApplicationPayload application;
+            public string clientMatchVerificationId;
+            public string matchId;
+            public SubmitterPayload submitter;
+
+            public MatchVerificationPayload(MatchVerificationRequest request)
+            {
+                application = (request.Application != null) ? new ApplicationPayload(request.Application) : null;
+                clientMatchVerificationId = ToPayloadString(request.ClientMatchVerificationId);
+                matchId = ToPayloadString(request.MatchId);
                 submitter = (request.Submitter != null) ? new SubmitterPayload(request.Submitter) : null;
             }
         }
@@ -100,7 +120,7 @@ namespace oojjrs.ore
 
         private static void AddArchiveEntry(ZipArchive archive, string entryName, byte[] data)
         {
-            var entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
+            var entry = archive.CreateEntry(entryName, System.IO.Compression.CompressionLevel.Optimal);
             using (var stream = entry.Open())
                 stream.Write(data, 0, data.Length);
         }
@@ -167,13 +187,13 @@ namespace oojjrs.ore
             }
         }
 
-        private static byte[] CreateReportArchive(string reportJson, IReadOnlyList<ReportAttachment> attachments)
+        private static byte[] CreateArchive(string metadataFileName, string metadataJson, IReadOnlyList<ReportAttachment> attachments)
         {
             using (var stream = new MemoryStream())
             {
                 using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, true))
                 {
-                    AddArchiveEntry(archive, ReportMetadataFileName, Encoding.UTF8.GetBytes(reportJson));
+                    AddArchiveEntry(archive, metadataFileName, Encoding.UTF8.GetBytes(metadataJson));
 
                     if (attachments != null)
                     {
@@ -274,6 +294,17 @@ namespace oojjrs.ore
             request.SetRequestHeader("Authorization", $"Bearer {_options.IngestionToken}");
         }
 
+        private UnityWebRequest CreateArchiveRequest(string collection, string archiveFileName, byte[] archiveData)
+        {
+            var webRequest = new UnityWebRequest(CreateUri(_options, collection), UnityWebRequest.kHttpVerbPOST);
+            webRequest.downloadHandler = new DownloadHandlerBuffer();
+            webRequest.uploadHandler = new UploadHandlerRaw(archiveData);
+            webRequest.uploadHandler.contentType = "application/zip";
+            webRequest.SetRequestHeader("Content-Disposition", $"attachment; filename=\"{archiveFileName}\"");
+            ConfigureRequest(webRequest);
+            return webRequest;
+        }
+
         public void SendEvent(EventRequest request, CancellationToken cancellationToken = default)
         {
             if (request == null)
@@ -300,18 +331,38 @@ namespace oojjrs.ore
             SendEvent(request, cancellationToken);
         }
 
+        public void SendMatchVerification(MatchVerificationRequest request, byte[] data, CancellationToken cancellationToken = default)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+
+            var metadataJson = AddRawProperty(AddOccurredAtUtc(JsonUtility.ToJson(new MatchVerificationPayload(request)), request.OccurredAtUtc), "context", request.ContextJson);
+            var attachments = new[] { new ReportAttachment(MatchVerificationDataFileName, data) };
+            var webRequest = CreateArchiveRequest("match-verifications", MatchVerificationArchiveFileName, CreateArchive(MatchVerificationMetadataFileName, metadataJson, attachments));
+            SendAsync(webRequest, cancellationToken);
+        }
+
+        public void SendMatchVerification(string matchId, byte[] data, Func<string> getContextJson = null, CancellationToken cancellationToken = default)
+        {
+            var request = new MatchVerificationRequest(matchId)
+            {
+                Application = Application,
+                ClientMatchVerificationId = Guid.NewGuid().ToString("N"),
+                ContextJson = (getContextJson != null) ? getContextJson() : null,
+                Submitter = Submitter,
+            };
+            SendMatchVerification(request, data, cancellationToken);
+        }
+
         public void SendReport(ReportRequest request, IReadOnlyList<ReportAttachment> attachments = null, CancellationToken cancellationToken = default)
         {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
             var reportJson = AddRawProperty(AddOccurredAtUtc(JsonUtility.ToJson(new ReportPayload(request)), request.OccurredAtUtc), "context", request.ContextJson);
-            var webRequest = new UnityWebRequest(CreateUri(_options, "reports"), UnityWebRequest.kHttpVerbPOST);
-            webRequest.downloadHandler = new DownloadHandlerBuffer();
-            webRequest.uploadHandler = new UploadHandlerRaw(CreateReportArchive(reportJson, attachments));
-            webRequest.uploadHandler.contentType = "application/zip";
-            webRequest.SetRequestHeader("Content-Disposition", $"attachment; filename=\"{ReportArchiveFileName}\"");
-            ConfigureRequest(webRequest);
+            var webRequest = CreateArchiveRequest("reports", ReportArchiveFileName, CreateArchive(ReportMetadataFileName, reportJson, attachments));
             SendAsync(webRequest, cancellationToken);
         }
 

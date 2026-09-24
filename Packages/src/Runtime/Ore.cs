@@ -93,6 +93,11 @@ namespace oojjrs.ore
             GetClient().SendEvent(name, message, getPropertiesJson, cancellationToken);
         }
 
+        public static void SendMatchVerification(string matchId, byte[] data, Func<string> getContextJson = null, CancellationToken cancellationToken = default)
+        {
+            GetClient().SendMatchVerification(matchId, data, getContextJson, cancellationToken);
+        }
+
         public static void SendReport(Texture2D screenshot, string summary, Func<string> getContextJson = null, CancellationToken cancellationToken = default)
         {
             GetClient().SendReport(screenshot, summary, getContextJson, cancellationToken);
