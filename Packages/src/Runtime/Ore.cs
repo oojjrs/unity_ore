@@ -46,7 +46,7 @@ namespace oojjrs.ore
                 var width = Mathf.RoundToInt(screenshot.width * scale);
                 var height = Mathf.RoundToInt(screenshot.height * scale);
                 renderTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.Default, RenderTextureReadWrite.Default);
-                resizedTexture = new Texture2D(width, height, TextureFormat.RGB24, false);
+                resizedTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
 
                 Graphics.Blit(screenshot, renderTexture);
                 RenderTexture.active = renderTexture;
